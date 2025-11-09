@@ -1,36 +1,68 @@
 import Feedback from "../models/feedbackModel.js";
 
-// Create feedback
+// =============================
+// Create New Feedback
+// =============================
 export const createFeedback = async (req, res) => {
   try {
-    const { message, rating } = req.body;
+    const { text, rating } = req.body;
+
+    // Validate input
+    if (!text || !rating) {
+      return res.status(400).json({ message: "Please provide both feedback text and rating." });
+    }
+
+    // Create feedback entry
     const feedback = await Feedback.create({
       user: req.user._id,
-      message,
+      text,     // matches your frontend and model
       rating,
     });
-    res.status(201).json(feedback);
+
+    res.status(201).json({
+      success: true,
+      message: "Feedback submitted successfully",
+      feedback,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("❌ Feedback creation error:", error.message);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
-// Get feedbacks for current user
+// =============================
+// Get Feedbacks by Logged-in User
+// =============================
 export const getMyFeedbacks = async (req, res) => {
   try {
-    const feedbacks = await Feedback.find({ user: req.user._id }).populate("user", "name");
-    res.json(feedbacks);
+    const feedbacks = await Feedback.find({ user: req.user._id })
+      .populate("user", "name email");
+
+    res.status(200).json({
+      success: true,
+      count: feedbacks.length,
+      feedbacks,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("❌ Error fetching user feedbacks:", error.message);
+    res.status(500).json({ message: "Failed to load feedbacks", error: error.message });
   }
 };
 
-// Get all feedbacks (admin)
+// =============================
+// Get All Feedbacks (Admin)
+// =============================
 export const getAllFeedbacks = async (req, res) => {
   try {
-    const feedbacks = await Feedback.find().populate("user", "name");
-    res.json(feedbacks);
+    const feedbacks = await Feedback.find().populate("user", "name email");
+
+    res.status(200).json({
+      success: true,
+      count: feedbacks.length,
+      feedbacks,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("❌ Error fetching all feedbacks:", error.message);
+    res.status(500).json({ message: "Failed to load feedbacks", error: error.message });
   }
 };

@@ -1,85 +1,121 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import API from "../services/api";
+import { getFeedbacks, submitFeedback } from "../services/api";
+import styles from './HomeNew.module.css';
 
-const Home = () => {
-  const { user } = useContext(AuthContext);
+export default function Home() {
+  const { user, logout } = useContext(AuthContext);
   const [feedbacks, setFeedbacks] = useState([]);
-  const [message, setMessage] = useState("");
+  const [feedback, setFeedback] = useState("");
   const [rating, setRating] = useState(5);
 
-  // Fetch all feedbacks (admin) or user feedbacks
-  const fetchFeedbacks = async () => {
-  try {
-    console.log("Fetching feedbacks for:", user?.role);
-    const { data } = await API.get(
-      user?.role === "admin" ? "/feedback" : "/feedback/my"
-    );
-    setFeedbacks(data);
-  } catch (error) {
-    console.error("Failed to fetch feedbacks", error);
-    alert("Failed to fetch feedbacks");
-  }
-};
+  const loadFeedbacks = async () => {
+    try {
+      const res = await getFeedbacks(user?.role);
+      const data = res.data.feedbacks || res.data;
+      setFeedbacks(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch feedbacks:", error);
+      setFeedbacks([]);
+    }
+  };
+
+  // Fetch feedbacks on component mount and when user changes
+  useEffect(() => {
+    if (user) {
+      loadFeedbacks();
+    }
+  }, [user]);
 
   // Submit feedback
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user) return alert("Please sign in for giving the feedback");
+    if (!feedback) return alert("Please enter your feedback");
+
     try {
-      await API.post("/feedback", { message, rating });
-      alert("Feedback submitted!");
-      setMessage("");
+      await submitFeedback({ text: feedback, rating });
+      setFeedback("");
       setRating(5);
-      fetchFeedbacks(); // refresh list
+      alert("Feedback submitted!");
+
+      // Refresh feedbacks
+      await loadFeedbacks();
     } catch (error) {
       console.error("Submit feedback error:", error);
-      alert("Failed to submit feedback");
+      alert("Failed to submit feedback.");
     }
   };
 
-  useEffect(() => {
-    if (user) fetchFeedbacks();
-  }, [user]);
-
   return (
-    <div>
-      <h2>Welcome {user?.name}</h2>
+    <div className={styles.pageWrapper}>
+      <div className={styles.homeContainer}>
+        {/* Main Title */}
+        <h2 className={styles.title}>
+          Customer Feedback Portal
+        </h2>
 
-      <form onSubmit={handleSubmit}>
-        <textarea
-          placeholder="Write your feedback..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <br />
-        <label>
-          Rating:
-          <select value={rating} onChange={(e) => setRating(e.target.value)}>
-            {[1, 2, 3, 4, 5].map((num) => (
-              <option key={num} value={num}>
-                {num}
-              </option>
-            ))}
-          </select>
-        </label>
-        <br />
-        <button type="submit">Submit</button>
-      </form>
+        {/* Welcome Text */}
+        <h3 className={styles.welcomeText}>
+          Welcome, <span className={styles.username}>{user?.name || user?.email || 'Guest'}</span> 👋
+        </h3>
 
-      <h3>Feedbacks:</h3>
-      {feedbacks.length > 0 ? (
-        <ul>
-          {feedbacks.map((fb) => (
-            <li key={fb._id}>
-              <strong>{fb.user?.name || "Anonymous"}:</strong> {fb.message} (⭐{fb.rating})
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No feedbacks yet.</p>
-      )}
+        {/* Feedback Form */}
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Your Feedback:</label>
+            <textarea
+              className={styles.textarea}
+              placeholder="Write your feedback here..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Rating:</label>
+            <select
+              className={styles.select}
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+            >
+              {[1, 2, 3, 4, 5].map((r) => (
+                <option key={r} value={r}>
+                  {r} Star{r !== 1 ? 's' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button type="submit" className={styles.submitButton}>
+            Submit Feedback
+          </button>
+        </form>
+
+        {/* Feedback Section */}
+        <div className={styles.feedbackSection}>
+          <h4 className={styles.sectionTitle}>Feedbacks:</h4>
+          {feedbacks.length === 0 ? (
+            <p className={styles.noFeedback}>No feedbacks yet. Submit one above!</p>
+          ) : (
+            feedbacks.map((f, i) => (
+              <div key={i} className={styles.feedbackCard}>
+                <p>
+                  <strong>{f.user?.name || user?.name || user?.email || 'Anonymous'}:</strong>{" "}
+                  {f.text}
+                </p>
+                <div className={styles.rating}>
+                  ⭐ Rating: {f.rating}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className={styles.footer}>
+          Made by <strong>Arya Jain</strong> — Customer Feedback Portal
+        </footer>
+      </div>
     </div>
   );
-};
-
-export default Home;
+}

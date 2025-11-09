@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../services/api";
 
 const Signup = () => {
@@ -21,23 +21,59 @@ const Signup = () => {
         login(data);
         navigate("/");
       } else {
-        alert(data.message || "Signup failed");
+        alert(data.message || "Signup failed. Please try again.");
       }
     } catch (error) {
       console.error("🔥 Signup Error:", error.response?.data || error.message);
-      alert(error.response?.data?.message || "Signup failed");
+      alert(error.response?.data?.message || "Signup failed. Please check your input.");
     }
   };
 
   return (
-    <div>
-      <h2>Signup</h2>
-      <form onSubmit={handleSubmit}>
-        <input name="name" placeholder="Name" onChange={handleChange} required />
-        <input name="email" type="email" placeholder="Email" onChange={handleChange} required />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} required />
-        <button type="submit">Signup</button>
-      </form>
+    <div className="page-wrapper">
+      <div className="auth-container">
+        <h2 style={{ marginBottom: "10px" }}>Create Your Account</h2>
+        <p style={{ marginBottom: "25px", color: "#64748b" }}>
+          Join the <strong>Customer Feedback Portal</strong> and start sharing your thoughts!
+        </p>
+
+        <form onSubmit={handleSubmit}>
+          <input
+            name="name"
+            placeholder="Full Name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            name="email"
+            type="email"
+            placeholder="Email Address"
+            value={form.email}
+            onChange={handleChange}
+            required
+          />
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
+
+          <button type="submit" style={{ marginTop: "15px", width: "100%" }}>
+            Sign Up
+          </button>
+        </form>
+
+        <p style={{ marginTop: "25px", fontSize: "14px", color: "#64748b" }}>
+          Already have an account?{" "}
+          <Link to="/login" style={{ color: "#4a6cf7", fontWeight: "600" }}>
+            Log in here
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };
